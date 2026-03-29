@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zynta</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:#121212;
+  color:#fff;
+}
+
+.container{
+  max-width:500px;
+  margin:auto;
+  padding:20px;
+}
+
+h1,h2{
+  text-align:center;
+  color:#00ffcc;
+}
+
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.profile{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  cursor:pointer;
+}
+
+.profile img{
+  width:35px;
+  height:35px;
+  border-radius:50%;
+}
+
+.post{
+  background:#fff;
+  color:#000;
+  padding:15px;
+  margin-top:10px;
+  border-radius:15px;
+  position:relative;
+}
+
+.postHeader{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.postHeader img{
+  width:30px;
+  height:30px;
+  border-radius:50%;
+}
+
+input,textarea,select{
+  width:100%;
+  margin:6px 0;
+  padding:10px;
+  border-radius:12px;
+  border:none;
+}
+
+button{
+  padding:10px;
+  border-radius:12px;
+  border:none;
+  background:#00ffcc;
+  cursor:pointer;
+}
+
+.tela{display:none}
+.ativa{display:block}
+
+.fab{
+  position:fixed;
+  bottom:20px;
+  right:20px;
+  width:60px;
+  height:60px;
+  border-radius:50%;
+  background:#00ffcc;
+  color:#000;
+  font-size:30px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+}
+
+.linha{display:flex;gap:10px}
+
+.idioma{
+  margin-top:20px;
+  text-align:center;
+}
+
+.selectIdioma{
+  width:auto;
+  padding:5px 10px;
+  font-size:12px;
+  border-radius:20px;
+  background:#222;
+  color:#fff;
+  border:1px solid #00ffcc;
+  cursor:pointer;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- TELA 1 -->
+<div id="tela1" class="container tela ativa">
+  <h1>🚀 Zynta</h1>
+
+  <input id="usuario" placeholder="Seu nome">
+  <button id="btnEntrar" onclick="entrar()">Entrar</button>
+
+  <div class="idioma">
+    <select onchange="trocarIdioma(this.value)" class="selectIdioma">
+      <option value="pt">🇧🇷 PT</option>
+      <option value="en">🇺🇸 EN</option>
+    </select>
+  </div>
+</div>
+
+<!-- TELA 2 -->
+<div id="tela2" class="container tela">
+
+  <div class="topbar">
+    <h2>Feed</h2>
+
+    <div class="profile" onclick="abrirPerfil()">
+      <img id="fotoTopo">
+      <span id="nomeTopo"></span>
+    </div>
+  </div>
+
+  <button onclick="toggleFiltro()">⚙️ Filtro</button>
+
+  <div id="menuFiltro" style="display:none">
+    <select onchange="filtrar(this.value)">
+      <option value="todos">Todos</option>
+      <option value="pc">💻 PC</option>
+      <option value="celular">📱 Celular</option>
+      <option value="console">🎮 Console</option>
+    </select>
+  </div>
+
+  <div style="margin-top:10px;text-align:right">
+    <button onclick="sair()" style="background:#ff4d4d;color:#fff">Sair</button>
+  </div>
+
+  <div id="posts"></div>
+
+  <div class="fab" onclick="abrirPost()">+</div>
+</div>
+
+<!-- TELA 3 -->
+<div id="tela3" class="container tela">
+  <h2 id="tituloPost">Novo Post</h2>
+
+  <select id="tema">
+    <option value="pc">💻 PC</option>
+    <option value="celular">📱 Celular</option>
+    <option value="console">🎮 Console</option>
+  </select>
+
+  <input type="file" id="imagem" accept="image/*" onchange="preview()">
+
+  <img id="previewImg" style="display:none;width:100%;border-radius:10px">
+
+  <textarea id="problema" placeholder="Problema"></textarea>
+  <textarea id="solucao" placeholder="Solução"></textarea>
+
+  <div class="linha">
+    <button id="btnPostar" onclick="postar()">Postar</button>
+    <button onclick="voltar()">Voltar</button>
+  </div>
+</div>
+
+<!-- TELA 4 -->
+<div id="tela4" class="container tela">
+  <h2>Perfil</h2>
+
+  <img id="previewPerfil" style="width:80px;height:80px;border-radius:50%">
+
+  <input type="file" onchange="trocarFoto(this)">
+  <input id="novoNome" placeholder="Novo nome">
+
+  <p id="stats"></p>
+  <p id="ranking"></p>
+  <p id="conquistas"></p>
+
+  <button onclick="salvarPerfil()">Salvar</button>
+  <button onclick="voltar()">Voltar</button>
+</div>
+
+<script>
+let usuario="";
+let foto="";
+let posts=[];
+let imagemBase64=null;
+let filtro='todos';
+let idioma='pt';
+
+let textos={
+  pt:{entrar:"Entrar",postar:"Postar",problema:"Problema",solucao:"Solução"},
+  en:{entrar:"Login",postar:"Post",problema:"Problem",solucao:"Solution"}
+};
+
+function trocarIdioma(lang){
+  idioma=lang;
+  aplicarIdioma();
+}
+
+function aplicarIdioma(){
+  document.getElementById('btnEntrar').innerText=textos[idioma].entrar;
+  document.getElementById('btnPostar').innerText=textos[idioma].postar;
+  document.getElementById('problema').placeholder=textos[idioma].problema;
+  document.getElementById('solucao').placeholder=textos[idioma].solucao;
+}
+
+function getRank(p){
+  if(p>=50) return "💎 Diamante";
+  if(p>=30) return "🥇 Ouro";
+  if(p>=10) return "🥈 Prata";
+  return "🔰 Iniciante";
+}
+
+function getConquistas(t){
+  let l=[];
+  if(t>=1) l.push("🎉 Primeiro post");
+  if(t>=5) l.push("👏 Ajudante");
+  if(t>=10) l.push("🔥 Expert");
+  if(t>=20) l.push("🏆 Mestre");
+  return l.join(' | ');
+}
+
+function trocarTela(id){
+  document.querySelectorAll('.tela').forEach(t=>t.classList.remove('ativa'));
+  document.getElementById(id).classList.add('ativa');
+}
+
+function entrar(){
+  let nome=document.getElementById('usuario').value;
+  if(!nome) return alert('Digite nome');
+  usuario=nome;
+  salvarPerfilLocal();
+  trocarTela('tela2');
+  render();
+}
+
+function salvarPerfilLocal(){
+  localStorage.setItem('perfil',JSON.stringify({usuario,foto}));
+}
+
+function carregarPerfil(){
+  let p=JSON.parse(localStorage.getItem('perfil')||'{}');
+  if(p.usuario){usuario=p.usuario;foto=p.foto||''}
+}
+
+function abrirPerfil(){
+  novoNome.value=usuario;
+  previewPerfil.src=foto||'';
+  let total=posts.filter(p=>p.usuario===usuario).length;
+  let pontos=total*10;
+  stats.innerText='Posts: '+total;
+  ranking.innerText='Rank: '+getRank(pontos);
+  conquistas.innerText='Conquistas: '+getConquistas(total);
+  trocarTela('tela4');
+}
+
+function salvarPerfil(){
+  usuario=novoNome.value;
+  salvarPerfilLocal();
+  voltar();
+  render();
+}
+
+function trocarFoto(input){
+  let r=new FileReader();
+  r.onload=e=>{foto=e.target.result;previewPerfil.src=foto};
+  r.readAsDataURL(input.files[0]);
+}
+
+function sair(){
+  localStorage.removeItem('perfil');
+  trocarTela('tela1');
+}
+
+function abrirPost(){trocarTela('tela3');}
+function voltar(){trocarTela('tela2');}
+
+function toggleFiltro(){
+  let m=document.getElementById('menuFiltro');
+  m.style.display=m.style.display==='none'?'block':'none';
+}
+
+function filtrar(tipo){filtro=tipo;render();}
+
+function preview(){
+  let r=new FileReader();
+  r.onload=e=>{
+    imagemBase64=e.target.result;
+    previewImg.src=imagemBase64;
+    previewImg.style.display='block';
+  };
+  r.readAsDataURL(imagem.files[0]);
+}
+
+function postar(){
+  let p=problema.value;
+  let s=solucao.value;
+  let tema=document.getElementById('tema').value;
+  if(!p||!s) return alert('Preencha');
+
+  posts.unshift({usuario,foto,problema:p,solucao:s,tema,imagem:imagemBase64});
+  salvar();
+
+  problema.value='';
+  solucao.value='';
+  imagem.value='';
+  previewImg.style.display='none';
+  imagemBase64=null;
+
+  voltar();
+}
+
+function salvar(){
+  localStorage.setItem('posts',JSON.stringify(posts));
+  render();
+}
+
+function render(){
+  nomeTopo.innerText=usuario;
+  fotoTopo.src=foto||'';
+
+  let c=document.getElementById('posts');
+  c.innerHTML='';
+
+  posts.filter(p=>filtro==='todos'||p.tema===filtro)
+  .forEach((p,i)=>{
+    let total=posts.filter(x=>x.usuario===p.usuario).length;
+    let rank=getRank(total*10);
+
+    let div=document.createElement('div');
+    div.className='post';
+
+    div.innerHTML=`
+      <div class='postHeader'>
+        <img src='${p.foto||''}'>
+        <b>${p.usuario}</b> ${rank}
+      </div>
+      ${p.problema}<br>
+      ${p.solucao}
+    `;
+
+    if(p.imagem){
+      let img=document.createElement('img');
+      img.src=p.imagem;
+      div.appendChild(img);
+    }
+
+    if(p.usuario===usuario){
+      let btn=document.createElement('button');
+      btn.innerText='🗑️';
+      btn.style.position='absolute';
+      btn.style.bottom='10px';
+      btn.style.right='10px';
+      btn.style.background='#ff4d4d';
+      btn.style.color='#fff';
+      btn.style.borderRadius='8px';
+
+      btn.onclick=()=>{
+        posts.splice(i,1);
+        salvar();
+      };
+
+      div.appendChild(btn);
+    }
+
+    c.appendChild(div);
+  });
+}
+
+function carregar(){
+  carregarPerfil();
+  let d=localStorage.getItem('posts');
+  if(d) posts=JSON.parse(d);
+
+  if(usuario) trocarTela('tela2');
+  else trocarTela('tela1');
+
+  render();
+  aplicarIdioma();
+}
+
+window.onload=carregar;
+</script>
+
+</body>
+</html>
